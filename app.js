@@ -52,7 +52,7 @@ var app = {
      initArduino: function() {
           arduino.open(function() {
                u('opening serial port');
-               app.write('why so boringzzzz');
+               app.write('Fetching tweets, it should take a while :)');
           });
      },
      write: function(msg) {
