@@ -165,6 +165,6 @@ var app = {
 app.init();
 app.getWeather(app.wInfo[0], app.wInfo[1], app.wInfo[2]);
 app.repeatGetWeather(30);
-app.pullTweet('#nyc');
+app.pullTweet(process.argv[2]);
 // app.displayTweet('#YOLO', 2);
 // app.repeatGetWeather();
