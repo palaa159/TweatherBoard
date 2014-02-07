@@ -132,7 +132,7 @@ var app = {
           }, function(stream) {
                stream.on('data', function(data) {
                     // get the one less than 100 char
-                    if (data.text.length < 50 && data.lang == 'en' && !data.text.contains('http') && !data.text.contains('@')) {
+                    if (data.text.length < 60 && data.lang == 'en' && !data.text.contains('http') && !data.text.contains('@')) {
                          // if pool exceeds 10, remove the 1st (shift)
                          if (app.tweetPool.length > 9) {
                               app.tweetPool.push(data.text);
@@ -165,6 +165,6 @@ var app = {
 app.init();
 app.getWeather(app.wInfo[0], app.wInfo[1], app.wInfo[2]);
 app.repeatGetWeather(30);
-app.pullTweet(process.argv[2]);
+app.pullTweet('#bkk');
 // app.displayTweet('#YOLO', 2);
 // app.repeatGetWeather();
