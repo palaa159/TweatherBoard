@@ -7,4 +7,5 @@
 4. Sure3208 LED Matrix display
 5. Sharp Rangefinder
 
+### Usage – sudo forever start app.js 
 #### Intruction coming soon!
