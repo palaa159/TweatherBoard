@@ -49,28 +49,31 @@ arduino
         if (receivedData.indexOf('#') >= 0 && receivedData.indexOf('@') >= 0) {
             var msg = receivedData.substring(receivedData.indexOf('@') + 1, receivedData.indexOf('#'));
             if (msg == '^') {
+                var rand = ~~ (Math.random() * 100);
                 // ending
                 tweather.isEnded = true;
-                if (tweather.isWeather) {
-                    tweather.isWeather = !tweather.isWeather;
-                    toBoard(tweather.weather.time + ', ' + tweather.weather.condition + ', ' + tweather.weather.temp_c + "'C / " + tweather.sayMsg);
+                if (tweather.isWeather === true) {
+                    tweather.isWeather = false;
+                    toBoard(tweather.weather.time + ', ' + tweather.weather.condition + ', ' + tweather.weather.temp_c + "'C");
                 } else if (tweather.isSaying) {
                     tweather.isSaying = !tweather.isSaying;
                     toBoard(tweather.sayMsg);
                 } else {
                     // show tweet
-                    if (~~(Math.random() * 100) >= 10) {
+                    if (rand >= 25) {
                         toBoard(tweather.tweetPool[~~(Math.random() * tweather.tweetPool.length - 1)]);
-                    } else if (~~(Math.random() * 100) < 10) {
+                    } else if (rand < 25 && rand > 10) {
+                        toBoard(tweather.sayMsg);
+                    } else if (rand < 10) {
+                        tweather.getWeather();
                         toBoard('TweatherBoard -- Tweet: #tweather say <your message> -- #tweather read <hashtag>');
                     } else {
                         toBoard(tweather.sayMsg);
                     }
                 }
             } else if (msg == 'w') {
-                util.log('weather call received');
-                tweather.getWeather();
                 tweather.isWeather = true;
+                util.log('weather call received');
             }
         }
     })
@@ -133,8 +136,8 @@ tweather.getWeather = function() {
 function toBoard(msg) {
     // if ended
     if (tweather.isEnded) {
+        tweather.isEnded = false;
         arduino.write(signal(msg), function() {
-            tweather.isEnded = !tweather.isEnded;
             util.log('WRITING "' + signal(msg) + '" TO ARDUINO');
         });
     } else {
