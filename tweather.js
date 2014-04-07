@@ -23,13 +23,13 @@ var tweather = {
         city: 'New_York'
     },
     readMsg: 'tweet #tweather read <hashtag>',
-    sayMsg: 'tweet #tweather say <hashtag>',
+    sayMsg: 'tweet #tweather say <your message>',
     defaultMsg: 'TweatherBoard -- Tweet: #tweather say <your message> -- #tweather read <hashtag>'
 };
 
 tweather.init = function() {
     util.log('INIT APP');
-    this.queryTweet('nyc');
+    this.queryTweet('happy');
     this.getWeather();
     toBoard('Tweather is ready');
 };
@@ -53,7 +53,10 @@ arduino
                 tweather.isEnded = true;
                 if (tweather.isWeather) {
                     tweather.isWeather = !tweather.isWeather;
-                    toBoard(tweather.weather.time + ', ' + tweather.weather.condition + ', ' + tweather.weather.temp_c + "'C /" + tweather.sayMsg);
+                    toBoard(tweather.weather.time + ', ' + tweather.weather.condition + ', ' + tweather.weather.temp_c + "'C / " + tweather.sayMsg);
+                } else if (tweather.isSaying) {
+                    tweather.isSaying = !tweather.isSaying;
+                    toBoard(tweather.sayMsg);
                 } else {
                     // show tweet
                     if (~~(Math.random() * 100) >= 10) {
@@ -65,6 +68,8 @@ arduino
                     }
                 }
             } else if (msg == 'w') {
+                util.log('weather call received');
+                tweather.getWeather();
                 tweather.isWeather = true;
             }
         }
@@ -84,7 +89,9 @@ tweather.queryTweet = function(string) {
             if (d.length < 60 && data.lang == 'en' && !d.contains('http') && !d.contains('@')) {
                 // if say
                 if (d.toLowerCase().contains('#tweather say ')) {
-                    tweather.sayMsg = d.substring(d.indexOf('#tweather say ') + 14, d.length);
+                    // console.log(data);
+                    tweather.sayMsg = '@' + data.user.screen_name + ' ' + d.substring(d.indexOf('#tweather say ') + 14, d.length);
+                    tweather.isSaying = true;
                     util.log('SAY: ' + tweather.sayMsg);
                 } else if (d.toLowerCase().contains('#tweather read ')) {
                     // read
