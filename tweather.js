@@ -22,16 +22,14 @@ var tweather = {
         state: 'NY',
         city: 'New_York'
     },
-    readMsg: 'tweet #tweather read <hashtag>',
-    sayMsg: 'tweet #tweather say <your message>',
-    defaultMsg: 'TweatherBoard -- Tweet: #tweather say <your message> -- #tweather read <hashtag>'
+    readMsg: '#love',
+    sayMsg: 'tweet #tweather say <your message>'
 };
 
 tweather.init = function() {
     util.log('INIT APP');
-    this.queryTweet('happy');
+    this.queryTweet(this.readMsg);
     this.getWeather();
-    toBoard('Tweather is ready');
 };
 
 // Arduino
@@ -54,19 +52,20 @@ arduino
                 tweather.isEnded = true;
                 if (tweather.isWeather === true) {
                     tweather.isWeather = false;
+                    tweather.getWeather();
                     toBoard(tweather.weather.time + ', ' + tweather.weather.condition + ', ' + tweather.weather.temp_c + "'C");
                 } else if (tweather.isSaying) {
                     tweather.isSaying = !tweather.isSaying;
                     toBoard(tweather.sayMsg);
                 } else {
                     // show tweet
-                    if (rand >= 25) {
+                    if (rand >= 25 && tweather.tweetPool.length >= 1) {
+                        tweather.queryTweet(tweather.readMsg);
                         toBoard(tweather.tweetPool[~~(Math.random() * tweather.tweetPool.length - 1)]);
                     } else if (rand < 25 && rand > 10) {
                         toBoard(tweather.sayMsg);
                     } else if (rand < 10) {
-                        tweather.getWeather();
-                        toBoard('TweatherBoard -- Tweet: #tweather say <your message> -- #tweather read <hashtag>');
+                        toBoard('Tweet: #tweather say <your message> -- #tweather read <hashtag>');
                     } else {
                         toBoard(tweather.sayMsg);
                     }
@@ -98,6 +97,8 @@ tweather.queryTweet = function(string) {
                     util.log('SAY: ' + tweather.sayMsg);
                 } else if (d.toLowerCase().contains('#tweather read ')) {
                     // read
+                    // clear array
+                    tweather.tweetPool = [];
                     tweather.readMsg = d.substring(d.indexOf('#tweather read ') + 15, d.length);
                     util.log('READ: ' + tweather.read);
                 } else {
