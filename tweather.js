@@ -22,8 +22,8 @@ var tweather = {
         state: 'NY',
         city: 'New_York'
     },
-    readMsg: '#love',
-    sayMsg: 'tweet #tweather say <your message>'
+    readMsg: 'love',
+    sayMsg: 'See something, say something'
 };
 
 tweather.init = function() {
@@ -47,6 +47,8 @@ arduino
         if (receivedData.indexOf('#') >= 0 && receivedData.indexOf('@') >= 0) {
             var msg = receivedData.substring(receivedData.indexOf('@') + 1, receivedData.indexOf('#'));
             if (msg == '^') {
+                tweather.stream.destroy();
+                tweather.queryTweet();
                 var rand = ~~ (Math.random() * 100);
                 // ending
                 tweather.isEnded = true;
@@ -59,15 +61,12 @@ arduino
                     toBoard(tweather.sayMsg);
                 } else {
                     // show tweet
-                    if (rand >= 25 && tweather.tweetPool.length >= 1) {
-                        tweather.queryTweet(tweather.readMsg);
+                    if (rand >= 20 && tweather.tweetPool.length >= 1) {
                         toBoard(tweather.tweetPool[~~(Math.random() * tweather.tweetPool.length - 1)]);
-                    } else if (rand < 25 && rand > 10) {
+                    } else if (rand > 10 && rand < 20) {
                         toBoard(tweather.sayMsg);
                     } else if (rand < 10) {
-                        toBoard('Tweet: #tweather say <your message> -- #tweather read <hashtag>');
-                    } else {
-                        toBoard(tweather.sayMsg);
+                        toBoard('Tweet: #tweather say <your message> -- #tweather read <word>');
                     }
                 }
             } else if (msg == 'w') {
@@ -81,12 +80,16 @@ arduino
     });
 
 // Twitter QueryTweet
-tweather.queryTweet = function(string) {
-    var hash = ['tweather', string];
+tweather.queryTweet = function() {
+    var hash = ['tweather', tweather.readMsg];
     twit.stream('statuses/filter', {
         'track': [hash]
     }, function(stream) {
-        stream.on('data', function(data) {
+        tweather.stream = stream;
+        tweather.stream.on('end', function() {
+            util.log('socket ended');
+        });
+        tweather.stream.on('data', function(data) {
             var d = data.text;
             if (d.length < 60 && data.lang == 'en' && !d.contains('http') && !d.contains('@')) {
                 // if say
