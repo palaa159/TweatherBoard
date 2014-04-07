@@ -14,21 +14,24 @@ var util = require('util'),
     });
 
 var tweather = {
+    isWeather: false,
+    tweetPool: [],
+    isEnded: false,
     weather: {
         api: 'ea440feaab5a84e7',
         state: 'NY',
         city: 'New_York'
     },
-    readMsg: 'yolo',
-    sayMsg: null,
-    defaultMsg: 'TweatherBoard v1.0 -- Tweet #tweather say <your message> -- #tweather read <hashtag>'
+    readMsg: 'tweet #tweather read <hashtag>',
+    sayMsg: 'tweet #tweather say <hashtag>',
+    defaultMsg: 'TweatherBoard -- Tweet: #tweather say <your message> -- #tweather read <hashtag>'
 };
 
 tweather.init = function() {
     util.log('INIT APP');
-    this.queryTweet(this.readMsg);
+    this.queryTweet('nyc');
     this.getWeather();
-    toTweather(tweather.defaultMsg);
+    toBoard('Tweather is ready');
 };
 
 // Arduino
@@ -41,7 +44,30 @@ arduino
         util.log('error: ' + err);
     })
     .on('data', function(data) {
-        // util.log(data);
+        var receivedData;
+        receivedData += data;
+        if (receivedData.indexOf('#') >= 0 && receivedData.indexOf('@') >= 0) {
+            var msg = receivedData.substring(receivedData.indexOf('@') + 1, receivedData.indexOf('#'));
+            if (msg == '^') {
+                // ending
+                tweather.isEnded = true;
+                if (tweather.isWeather) {
+                    tweather.isWeather = !tweather.isWeather;
+                    toBoard(tweather.weather.time + ', ' + tweather.weather.condition + ', ' + tweather.weather.temp_c + "'C /" + tweather.sayMsg);
+                } else {
+                    // show tweet
+                    if (~~(Math.random() * 100) >= 10) {
+                        toBoard(tweather.tweetPool[~~(Math.random() * tweather.tweetPool.length - 1)]);
+                    } else if (~~(Math.random() * 100) < 10) {
+                        toBoard('TweatherBoard -- Tweet: #tweather say <your message> -- #tweather read <hashtag>');
+                    } else {
+                        toBoard(tweather.sayMsg);
+                    }
+                }
+            } else if (msg == 'w') {
+                tweather.isWeather = true;
+            }
+        }
     })
     .on('close', function() {
         util.log('CONNETION CLOSED');
@@ -57,15 +83,20 @@ tweather.queryTweet = function(string) {
             var d = data.text;
             if (d.length < 60 && data.lang == 'en' && !d.contains('http') && !d.contains('@')) {
                 // if say
-                if (d.contains('#tweather say ')) {
+                if (d.toLowerCase().contains('#tweather say ')) {
                     tweather.sayMsg = d.substring(d.indexOf('#tweather say ') + 14, d.length);
                     util.log('SAY: ' + tweather.sayMsg);
-                } else if (d.contains('#tweather read ')) {
+                } else if (d.toLowerCase().contains('#tweather read ')) {
                     // read
-                    tweather.read = d.substring(d.indexOf('#tweather read ') + 15, d.length);
+                    tweather.readMsg = d.substring(d.indexOf('#tweather read ') + 15, d.length);
                     util.log('READ: ' + tweather.read);
                 } else {
-                    util.log('Tweet: ' + d);
+                    if (tweather.tweetPool.length < 20) {
+                        tweather.tweetPool.push(d);
+                    } else {
+                        tweather.tweetPool.shift();
+                        tweather.tweetPool.push(d);
+                    }
                 }
             }
         });
@@ -78,7 +109,7 @@ tweather.getWeather = function() {
         url: 'http://api.wunderground.com/api/' + tweather.weather.api + '/conditions/q/' + tweather.weather.state + '/' + tweather.weather.city + '.json',
         success: function(data) {
             util.log('WEATHER: ' + moment.unix(data.current_observation.local_epoch).format('ddd MMM D, hh:mm a'));
-            tweather.weather.time = data.current_observation.local_epoch;
+            tweather.weather.time = moment.unix(data.current_observation.local_epoch).format('ddd MMM D, hh:mm a');
             tweather.weather.condition = data.current_observation.weather;
             tweather.weather.temp_c = data.current_observation.feelslike_c;
             tweather.weather.temp_f = data.current_observation.feelslike_f;
@@ -92,9 +123,20 @@ tweather.getWeather = function() {
 
 // helpers
 
-function toTweather(msg) {
-    util.log('WRITING "' + msg + '" TO ARDUINO');
-    arduino.write('|' + msg + '`');
+function toBoard(msg) {
+    // if ended
+    if (tweather.isEnded) {
+        arduino.write(signal(msg), function() {
+            tweather.isEnded = !tweather.isEnded;
+            util.log('WRITING "' + signal(msg) + '" TO ARDUINO');
+        });
+    } else {
+        util.log('FAILED WRITING "' + signal(msg) + '" TO ARDUINO');
+    }
+}
+
+function signal(msg) {
+    return '|/ ' + msg + ' /`';
 }
 
 if (!('contains' in String.prototype)) {
